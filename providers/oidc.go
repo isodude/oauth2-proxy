@@ -1,15 +1,18 @@
 package providers
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"net/url"
 	"time"
 
+	"github.com/bitly/go-simplejson"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/requests"
 	"golang.org/x/oauth2"
 )
 
@@ -240,4 +243,32 @@ func (p *OIDCProvider) createSession(ctx context.Context, token *oauth2.Token, r
 	ss.SetExpiresOn(token.Expiry)
 
 	return ss, nil
+}
+
+func (p *OIDCProvider) introspectToken(token string) (*simplejson.Json, error) {
+	body := url.Values{}
+	body.Add("token", token)
+
+	js, err := requests.New(p.IntrospectURL.String()).
+		WithMethod("POST").
+		WithBody(bytes.NewBufferString(body.Encode())).
+		SetBasicHeader(p.ClientID, p.ClientSecret).
+		SetHeader("Content-Type", "application/x-www-form-urlencoded").
+		Do().
+		UnmarshalSimpleJSON()
+
+	if err != nil {
+		return nil, err
+	}
+
+	active, err := js.Get("active").EncodePretty()
+	if err != nil {
+		return nil, err
+	}
+
+	if string(active) != "true" {
+		return nil, fmt.Errorf("token status is inactive")
+	}
+
+	return js, nil
 }
