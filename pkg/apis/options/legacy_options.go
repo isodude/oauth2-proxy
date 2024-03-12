@@ -526,6 +526,8 @@ type LegacyProvider struct {
 	SkipClaimsFromProfileURL           bool     `flag:"skip-claims-from-profile-url" cfg:"skip_claims_from_profile_url"`
 	ProtectedResource                  string   `flag:"resource" cfg:"resource"`
 	ValidateURL                        string   `flag:"validate-url" cfg:"validate_url"`
+	IntrospectURL                      string   `flag:"introspect-url" cfg:"introspect_url"`
+	IntrospectToken                    bool     `flag:"introspect-token" cfg:"introspect-token"`
 	Scope                              string   `flag:"scope" cfg:"scope"`
 	Prompt                             string   `flag:"prompt" cfg:"prompt"`
 	ApprovalPrompt                     string   `flag:"approval-prompt" cfg:"approval_prompt"` // Deprecated by OIDC 1.0
@@ -578,6 +580,7 @@ func legacyProviderFlagSet() *pflag.FlagSet {
 	flagSet.StringSlice("oidc-audience-claim", OIDCAudienceClaims, "which OIDC claims are used as audience to verify against client id")
 	flagSet.StringSlice("oidc-extra-audience", []string{}, "additional audiences allowed to pass audience verification")
 	flagSet.String("resource", "", "The resource that is protected (Azure AD only)")
+	flagSet.Bool("introspect-token", false, "Validate token with token introspection endpoint")
 	flagSet.String("scope", "", "OAuth scope specification")
 	flagSet.String("prompt", "", "OIDC prompt")
 	flagSet.String("approval-prompt", "force", "OAuth approval_prompt")
@@ -620,6 +623,7 @@ func addEndpointsFlag(flagSet *pflag.FlagSet) {
 	flagSet.String("redeem-url", "", "Token redemption endpoint")
 	flagSet.String("profile-url", "", "Profile access endpoint")
 	flagSet.String("validate-url", "", "Access token validation endpoint")
+	flagSet.String("introspect-url", "", "Access token introspection endpoint")
 }
 
 func (l LegacyServer) convert() (Server, Server) {
@@ -682,6 +686,7 @@ func (l *LegacyProvider) convert() (Providers, error) {
 		SkipClaimsFromProfileURL: l.SkipClaimsFromProfileURL,
 		ProtectedResource:        l.ProtectedResource,
 		ValidateURL:              l.ValidateURL,
+		IntrospectURL:            l.IntrospectURL,
 		Scope:                    l.Scope,
 		AllowedGroups:            l.AllowedGroups,
 		CodeChallengeMethod:      l.CodeChallengeMethod,
